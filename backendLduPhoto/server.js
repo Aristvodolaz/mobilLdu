@@ -165,6 +165,8 @@ app.get('/api/photos', async (req, res) => {
     console.error('Failed to fetch photos:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
+});
+
 // DELETE endpoint to delete a photo and its record
 app.delete('/api/photos/:id', async (req, res) => {
   try {
