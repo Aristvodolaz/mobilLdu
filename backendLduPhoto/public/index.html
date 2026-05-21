@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LduPhoto - Панель управления</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <div class="logo-area">
+        <span class="logo-icon">📸</span>
+        <h1>LduPhoto</h1>
+        <span class="badge">Backend Dashboard</span>
+      </div>
+      <div class="status-area">
+        <span class="status-dot green"></span>
+        <span class="status-text">База данных подключена</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <!-- Left side: Upload form for testing -->
+      <section class="card upload-section">
+        <h2>Загрузить фото вручную</h2>
+        <p class="subtitle">Используйте эту форму для отладки и ручного добавления артикулов.</p>
+        
+        <form id="uploadForm">
+          <div class="form-group">
+            <label for="articleInput">Артикул товара</label>
+            <input type="text" id="articleInput" name="article" placeholder="Например: 421980" required autocomplete="off">
+          </div>
+          
+          <div class="form-group">
+            <label>Изображение</label>
+            <div class="file-dropzone" id="dropzone">
+              <input type="file" id="fileInput" name="photo" accept="image/*" required>
+              <div class="dropzone-text">
+                <span class="upload-icon">📤</span>
+                <p>Перетащите фото сюда или нажмите для выбора</p>
+                <span class="file-hint">Поддерживаются форматы JPG, PNG до 10MB</span>
+              </div>
+              <div class="preview-container" id="previewContainer" style="display: none;">
+                <img id="imagePreview" src="#" alt="Предпросмотр">
+                <button type="button" class="remove-btn" id="removeFileBtn">Удалить</button>
+              </div>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span class="btn-text">Отправить в базу данных</span>
+            <span class="spinner" id="btnSpinner" style="display: none;"></span>
+          </button>
+        </form>
+        
+        <div id="alertBox" class="alert" style="display: none;"></div>
+      </section>
+
+      <!-- Right side: Gallery of uploads -->
+      <section class="card gallery-section">
+        <div class="gallery-header">
+          <h2>Список загруженных фото</h2>
+          <span class="counter" id="photoCounter">0 шт.</span>
+        </div>
+        <p class="subtitle">Фотографии, полученные от мобильных устройств и веб-интерфейса.</p>
+        
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="Поиск по артикулу...">
+        </div>
+
+        <div class="gallery-grid" id="galleryGrid">
+          <!-- Dynamically populated -->
+          <div class="empty-state" id="emptyState">
+            <span class="empty-icon">📁</span>
+            <p>Нет загруженных фотографий</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2026 Комус ЛДУ. Все права защищены.</p>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

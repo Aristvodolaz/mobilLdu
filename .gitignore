@@ -1,0 +1,26 @@
+# Git ignore for LduPhoto project (monorepo structure)
+
+# Backend
+backendLduPhoto/node_modules/
+backendLduPhoto/.env
+backendLduPhoto/*.log
+
+# Mobile (Android native)
+mobilLduPhoto/*.iml
+mobilLduPhoto/.gradle/
+mobilLduPhoto/local.properties
+mobilLduPhoto/.idea/
+mobilLduPhoto/build/
+mobilLduPhoto/captures/
+mobilLduPhoto/.externalNativeBuild/
+mobilLduPhoto/.cxx/
+
+# General / OS / Editors
+.DS_Store
+Thumbs.db
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

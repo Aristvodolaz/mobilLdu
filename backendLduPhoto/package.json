@@ -1,0 +1,25 @@
+{
+  "name": "backendlduphoto",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop ldu-photo-backend",
+    "pm2:restart": "pm2 restart ldu-photo-backend",
+    "pm2:status": "pm2 status ldu-photo-backend",
+    "pm2:logs": "pm2 logs ldu-photo-backend",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mssql": "^12.5.4",
+    "multer": "^2.1.1"
+  }
+}
