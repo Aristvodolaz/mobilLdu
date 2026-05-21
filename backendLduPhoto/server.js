@@ -1,8 +1,8 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
 const sql = require('mssql');
 
@@ -88,7 +88,7 @@ async function initDatabase() {
     }
   } catch (err) {
     console.error('Database connection / initialization failed:', err);
-    process.exit(1);
+    throw err;
   }
 }
 
@@ -152,8 +152,16 @@ app.get('/api/photos', async (req, res) => {
   }
 });
 
-// Start application
-app.listen(PORT, async () => {
+// Start application (DB first so PM2 logs show connection errors)
+async function startServer() {
+  console.log('[startup] ldu-photo-backend starting, PORT=%s', PORT);
   await initDatabase();
-  console.log(`Backend server running on http://localhost:${PORT}`);
+  app.listen(PORT, () => {
+    console.log(`Backend server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer().catch((err) => {
+  console.error('[startup] failed:', err);
+  process.exit(1);
 });
