@@ -1,9 +1,24 @@
+console.log('[boot] ldu-photo-backend loading, pid=%s', process.pid);
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+const fs = require('fs');
+const envPath = path.join(__dirname, '.env');
+if (!fs.existsSync(envPath)) {
+  console.error('[startup] .env not found:', envPath);
+  console.error('[startup] Run: cp .env.example .env  and set DB_* / PORT');
+  process.exit(1);
+}
+require('dotenv').config({ path: envPath });
+
+const requiredEnv = ['DB_USER', 'DB_PASSWORD', 'DB_SERVER', 'DB_NAME'];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+if (missingEnv.length) {
+  console.error('[startup] Missing variables in .env:', missingEnv.join(', '));
+  process.exit(1);
+}
+
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const fs = require('fs');
 const sql = require('mssql');
 
 const app = express();

@@ -6,7 +6,7 @@ module.exports = {
       name: 'ldu-photo-backend',
       script: path.join(__dirname, 'server.js'),
       cwd: __dirname,
-      instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
