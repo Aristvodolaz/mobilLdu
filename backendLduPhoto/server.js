@@ -165,6 +165,54 @@ app.get('/api/photos', async (req, res) => {
     console.error('Failed to fetch photos:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
+// DELETE endpoint to delete a photo and its record
+app.delete('/api/photos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'ID parameter is required.' });
+    }
+
+    // 1. Fetch record first to get photo path
+    const selectQuery = 'SELECT PhotoPath FROM LduPhotos WHERE Id = @id';
+    const selectRequest = dbPool.request();
+    selectRequest.input('id', sql.Int, id);
+    const selectResult = await selectRequest.query(selectQuery);
+
+    if (selectResult.recordset.length === 0) {
+      return res.status(404).json({ error: 'Photo not found.' });
+    }
+
+    const photoPath = selectResult.recordset[0].PhotoPath;
+
+    // 2. Delete file from disk if it exists
+    if (photoPath) {
+      const fileName = path.basename(photoPath);
+      const filePath = path.join(uploadDir, fileName);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`Deleted file from disk: ${filePath}`);
+      } else {
+        console.log(`File not found on disk, skipping delete: ${filePath}`);
+      }
+    }
+
+    // 3. Delete from DB
+    const deleteQuery = 'DELETE FROM LduPhotos WHERE Id = @id';
+    const deleteRequest = dbPool.request();
+    deleteRequest.input('id', sql.Int, id);
+    await deleteRequest.query(deleteQuery);
+
+    console.log(`Deleted record from DB: ID = ${id}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Photo deleted successfully!'
+    });
+  } catch (err) {
+    console.error('Failed to delete photo:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 // Start application (DB first so PM2 logs show connection errors)
