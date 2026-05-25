@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node index.js",
     "pm2:start": "pm2 start ecosystem.config.js --update-env",
     "pm2:stop": "pm2 stop ldu-photo-backend",
     "pm2:restart": "pm2 restart ldu-photo-backend --update-env",
