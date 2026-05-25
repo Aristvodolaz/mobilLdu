@@ -107,43 +107,53 @@ async function initDatabase() {
   }
 }
 
-// POST endpoint to upload photo with article
-app.post('/api/photos', upload.single('photo'), async (req, res) => {
+// POST endpoint to upload photo(s) with article
+app.post('/api/photos', upload.array('photo', 10), async (req, res) => {
   try {
     const article = req.body.article;
-    const file = req.file;
+    const files = req.files || [];
+
+    // Fallback if single file handler was somehow triggered
+    if (req.file) {
+      files.push(req.file);
+    }
 
     if (!article) {
       return res.status(400).json({ error: 'Article field is required.' });
     }
-    if (!file) {
-      return res.status(400).json({ error: 'Photo file is required.' });
+    if (files.length === 0) {
+      return res.status(400).json({ error: 'Photo file(s) are required.' });
     }
 
-    // Relative web URL/path to the saved photo
-    const photoUrlPath = `/uploads/${file.filename}`;
+    const insertedData = [];
 
-    console.log(`Uploading: Article = ${article}, FilePath = ${photoUrlPath}`);
+    // Insert each photo record into Database
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const photoUrlPath = `/uploads/${file.filename}`;
 
-    // Insert record into Database
-    const query = `
-      INSERT INTO LduPhotos (Article, PhotoPath, UploadedAt)
-      VALUES (@article, @photoPath, GETDATE())
-    `;
+      console.log(`Uploading [${i + 1}/${files.length}]: Article = ${article}, FilePath = ${photoUrlPath}`);
 
-    const request = dbPool.request();
-    request.input('article', sql.NVarChar(100), article);
-    request.input('photoPath', sql.NVarChar(500), photoUrlPath);
+      const request = dbPool.request();
+      request.input('article', sql.NVarChar(100), article);
+      request.input('photoPath', sql.NVarChar(500), photoUrlPath);
 
-    await request.query(query);
+      const query = `
+        INSERT INTO LduPhotos (Article, PhotoPath, UploadedAt)
+        VALUES (@article, @photoPath, GETDATE())
+      `;
+      await request.query(query);
+
+      insertedData.push({
+        article: article,
+        photoPath: photoUrlPath
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      message: 'Photo uploaded and saved to DB successfully!',
-      data: {
-        article: article,
-        photoPath: photoUrlPath
-      }
+      message: `${files.length} photo(s) uploaded and saved to DB successfully!`,
+      data: insertedData
     });
   } catch (err) {
     console.error('Failed to process upload:', err);
