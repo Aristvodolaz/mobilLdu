@@ -87,6 +87,7 @@ async function initDatabase() {
         CREATE TABLE LduPhotos (
           Id INT IDENTITY(1,1) PRIMARY KEY,
           Article NVARCHAR(100) NOT NULL,
+          Marketplace NVARCHAR(100) NOT NULL DEFAULT '',
           PhotoPath NVARCHAR(500) NOT NULL,
           UploadedAt DATETIME DEFAULT GETDATE()
         );
@@ -94,6 +95,11 @@ async function initDatabase() {
       END
       ELSE
       BEGIN
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='LduPhotos' AND COLUMN_NAME='Marketplace')
+        BEGIN
+          ALTER TABLE LduPhotos ADD Marketplace NVARCHAR(100) NOT NULL DEFAULT '';
+          PRINT 'Column Marketplace added to LduPhotos.';
+        END
         PRINT 'Table LduPhotos already exists.';
       END
     `;
@@ -107,10 +113,11 @@ async function initDatabase() {
   }
 }
 
-// POST endpoint to upload photo(s) with article
+// POST endpoint to upload photo(s) with article and marketplace
 app.post('/api/photos', upload.array('photo', 10), async (req, res) => {
   try {
     const article = req.body.article;
+    const marketplace = req.body.marketplace || '';
     const files = req.files || [];
 
     // Fallback if single file handler was somehow triggered
@@ -132,20 +139,22 @@ app.post('/api/photos', upload.array('photo', 10), async (req, res) => {
       const file = files[i];
       const photoUrlPath = `/uploads/${file.filename}`;
 
-      console.log(`Uploading [${i + 1}/${files.length}]: Article = ${article}, FilePath = ${photoUrlPath}`);
+      console.log(`Uploading [${i + 1}/${files.length}]: Article = ${article}, Marketplace = ${marketplace}, FilePath = ${photoUrlPath}`);
 
       const request = dbPool.request();
       request.input('article', sql.NVarChar(100), article);
+      request.input('marketplace', sql.NVarChar(100), marketplace);
       request.input('photoPath', sql.NVarChar(500), photoUrlPath);
 
       const query = `
-        INSERT INTO LduPhotos (Article, PhotoPath, UploadedAt)
-        VALUES (@article, @photoPath, GETDATE())
+        INSERT INTO LduPhotos (Article, Marketplace, PhotoPath, UploadedAt)
+        VALUES (@article, @marketplace, @photoPath, GETDATE())
       `;
       await request.query(query);
 
       insertedData.push({
         article: article,
+        marketplace: marketplace,
         photoPath: photoUrlPath
       });
     }
@@ -165,7 +174,7 @@ app.post('/api/photos', upload.array('photo', 10), async (req, res) => {
 app.get('/api/photos', async (req, res) => {
   try {
     const query = `
-      SELECT Id, Article, PhotoPath, UploadedAt
+      SELECT Id, Article, Marketplace, PhotoPath, UploadedAt
       FROM LduPhotos
       ORDER BY UploadedAt DESC
     `;
