@@ -236,6 +236,33 @@ app.delete('/api/photos/:id', async (req, res) => {
   }
 });
 
+// PUT endpoint to update marketplace for an article
+app.put('/api/photos/marketplace', async (req, res) => {
+  try {
+    const { article, marketplace } = req.body;
+    if (!article) {
+      return res.status(400).json({ error: 'Article is required.' });
+    }
+
+    const updateQuery = 'UPDATE LduPhotos SET Marketplace = @marketplace WHERE Article = @article';
+    const updateRequest = dbPool.request();
+    updateRequest.input('marketplace', sql.NVarChar(100), marketplace || '');
+    updateRequest.input('article', sql.NVarChar(100), article);
+    await updateRequest.query(updateQuery);
+
+    console.log(`Updated marketplace for article ${article} to "${marketplace}"`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Marketplace updated successfully!'
+    });
+  } catch (err) {
+    console.error('Failed to update marketplace:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 // Start application (DB first so PM2 logs show connection errors)
 async function startServer() {
   console.log('[startup] ldu-photo-backend starting, PORT=%s', PORT);

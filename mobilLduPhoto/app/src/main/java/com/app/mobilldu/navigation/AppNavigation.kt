@@ -49,8 +49,15 @@ fun AppNavigation() {
     val captureViewModel: CaptureViewModel = viewModel(
         factory = CaptureViewModel.Factory(uploadUseCase, context)
     )
+
+    // Читаем сохранённый URL для передачи в HistoryViewModel
+    val serverUrl = remember {
+        context.getSharedPreferences("LduPhotoPrefs", Context.MODE_PRIVATE)
+            .getString("server_url", "http://10.171.12.36:3030") ?: "http://10.171.12.36:3030"
+    }
+
     val historyViewModel: HistoryViewModel = viewModel(
-        factory = HistoryViewModel.Factory(getHistoryUseCase, repository)
+        factory = HistoryViewModel.Factory(getHistoryUseCase, repository, serverUrl)
     )
 
     // Load saved server URL on first launch
