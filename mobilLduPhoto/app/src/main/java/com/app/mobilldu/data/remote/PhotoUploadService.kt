@@ -11,9 +11,9 @@ import retrofit2.http.Part
 interface PhotoUploadService {
     @Multipart
     @POST("api/photos")
-    suspend fun uploadPhoto(
-        @Part photo: MultipartBody.Part,
-        @Part("article") sku: RequestBody,
+    suspend fun uploadPhotos(
+        @Part photos: List<MultipartBody.Part>,
+        @Part("article") article: RequestBody,
         @Part("marketplace") marketplace: RequestBody
     ): Response<ResponseBody>
 }

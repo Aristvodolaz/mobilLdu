@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 
 class CaptureViewModel(
     private val uploadPhotoUseCase: UploadPhotoUseCase,
@@ -91,55 +90,54 @@ class CaptureViewModel(
         }
 
         viewModelScope.launch {
-            _state.update { it.copy(isUploading = true, uploadProgress = 0, errorMessage = null, successMessage = null) }
-
-            var successCount = 0
-            var failCount = 0
-            val errors = mutableListOf<String>()
-
-            current.photos.forEachIndexed { index, photoEntry ->
-                val file = File(photoEntry.filePath)
-                if (!file.exists()) {
-                    failCount++
-                    errors.add("Фото ${index + 1}: файл не найден")
-                    return@forEachIndexed
-                }
-
-                val result = uploadPhotoUseCase(
-                    sku = current.sku,
-                    marketplace = current.marketplace,
-                    file = file,
-                    serverUrl = current.serverUrl
-                )
-
-                if (result.isSuccess) {
-                    successCount++
-                } else {
-                    failCount++
-                    errors.add("Фото ${index + 1}: ${result.exceptionOrNull()?.message ?: "Ошибка"}")
-                }
-
-                _state.update { it.copy(uploadProgress = index + 1) }
-            }
-
-            val message = when {
-                failCount == 0 -> "✅ Все $successCount фото успешно загружены!"
-                successCount == 0 -> "❌ Загрузка не удалась: ${errors.joinToString("; ")}"
-                else -> "⚠️ Загружено $successCount из ${current.photos.size}. Ошибки: ${errors.joinToString("; ")}"
-            }
-
             _state.update {
-                it.copy(
-                    isUploading = false,
-                    successMessage = if (failCount == 0) message else null,
-                    errorMessage = if (failCount > 0) message else null
-                )
+                it.copy(isUploading = true, uploadProgress = 0, errorMessage = null, successMessage = null)
             }
 
-            // Auto clear after full success
-            if (failCount == 0) {
+            // Собираем только существующие файлы
+            val files = current.photos.mapNotNull { entry ->
+                val f = java.io.File(entry.filePath)
+                if (f.exists()) f else null
+            }
+
+            val missingCount = current.photos.size - files.size
+
+            if (files.isEmpty()) {
                 _state.update {
-                    it.copy(photos = emptyList(), currentPage = 0, sku = "", uploadProgress = 0)
+                    it.copy(isUploading = false, errorMessage = "Файлы фото не найдены на устройстве")
+                }
+                return@launch
+            }
+
+            // Один запрос — все фото сразу
+            val result = uploadPhotoUseCase(
+                sku = current.sku,
+                marketplace = current.marketplace,
+                files = files,
+                serverUrl = current.serverUrl
+            )
+
+            _state.update { it.copy(uploadProgress = files.size) }
+
+            if (result.isSuccess) {
+                val msg = if (missingCount > 0)
+                    "✅ ${files.size} фото загружено! (${missingCount} файл(а) не найдено)"
+                else
+                    "✅ Все ${files.size} фото успешно загружены!"
+                _state.update {
+                    it.copy(
+                        isUploading = false,
+                        successMessage = msg,
+                        photos = emptyList(),
+                        currentPage = 0,
+                        sku = "",
+                        uploadProgress = 0
+                    )
+                }
+            } else {
+                val errorMsg = result.exceptionOrNull()?.message ?: "Ошибка загрузки"
+                _state.update {
+                    it.copy(isUploading = false, errorMessage = "❌ $errorMsg")
                 }
             }
         }

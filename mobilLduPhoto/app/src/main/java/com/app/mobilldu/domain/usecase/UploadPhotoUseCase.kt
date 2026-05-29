@@ -8,23 +8,32 @@ class UploadPhotoUseCase(
     private val repository: PhotoRepository,
     private val dao: PhotoRecordDao
 ) {
+    /**
+     * Сохраняет все локальные записи и отправляет все файлы одним запросом.
+     * Возвращает Result.success если все файлы загружены, иначе failure.
+     */
     suspend operator fun invoke(
         sku: String,
         marketplace: String,
-        file: File,
+        files: List<File>,
         serverUrl: String
     ): Result<Unit> {
-        val recordId = repository.saveLocalRecord(sku, marketplace, file.absolutePath)
-
-        val result = repository.uploadPhoto(sku, marketplace, file, serverUrl)
-
-        return if (result.isSuccess) {
-            dao.updateStatus(recordId, "uploaded")
-            Result.success(Unit)
-        } else {
-            val errorMsg = result.exceptionOrNull()?.message ?: "Unknown error"
-            dao.updateStatus(recordId, "failed", errorMsg)
-            Result.failure(result.exceptionOrNull() ?: Exception("Upload failed"))
+        // 1. Сохраняем каждое фото в локальную БД как pending
+        val recordIds = files.map { file ->
+            repository.saveLocalRecord(sku, marketplace, file.absolutePath)
         }
+
+        // 2. Отправляем все файлы одним запросом
+        val result = repository.uploadPhotos(sku, marketplace, files, serverUrl)
+
+        // 3. Обновляем статусы в локальной БД
+        if (result.isSuccess) {
+            recordIds.forEach { id -> dao.updateStatus(id, "uploaded") }
+        } else {
+            val errorMsg = result.exceptionOrNull()?.message ?: "Upload failed"
+            recordIds.forEach { id -> dao.updateStatus(id, "failed", errorMsg) }
+        }
+
+        return result
     }
 }

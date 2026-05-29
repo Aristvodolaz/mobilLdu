@@ -28,24 +28,28 @@ class PhotoRepositoryImpl(
         return dao.insert(entity)
     }
 
-    override suspend fun uploadPhoto(
+    override suspend fun uploadPhotos(
         sku: String,
         marketplace: String,
-        file: File,
+        files: List<File>,
         serverUrl: String
-    ): Result<Long> {
+    ): Result<Unit> {
         return try {
             val service = NetworkClient.getService(serverUrl)
 
-            val skuBody = sku.trim().toRequestBody("text/plain".toMediaTypeOrNull())
+            val articleBody = sku.trim().toRequestBody("text/plain".toMediaTypeOrNull())
             val marketplaceBody = marketplace.toRequestBody("text/plain".toMediaTypeOrNull())
-            val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            val photoPart = MultipartBody.Part.createFormData("photo", file.name, requestFile)
 
-            val response = service.uploadPhoto(photoPart, skuBody, marketplaceBody)
+            // Формируем список частей — каждая часть называется "photo" (сервер принимает массив)
+            val photoParts = files.map { file ->
+                val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                MultipartBody.Part.createFormData("photo", file.name, requestFile)
+            }
+
+            val response = service.uploadPhotos(photoParts, articleBody, marketplaceBody)
 
             if (response.isSuccessful) {
-                Result.success(response.code().toLong())
+                Result.success(Unit)
             } else {
                 val errorMsg = response.errorBody()?.string() ?: "Server error ${response.code()}"
                 Result.failure(Exception(errorMsg))
